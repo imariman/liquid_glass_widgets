@@ -1,3 +1,9 @@
+# Unreleased
+
+## Features
+
+- **Semantic selected state for menu rows (`GlassMenuItem.semanticsSelected`) (#454):** A new nullable `semanticsSelected` flag marks a row as the menu's current choice for assistive technologies only, without changing how it is drawn. Use it in picker and sort menus that mark the current value with a checkmark: `true` makes VoiceOver and TalkBack announce the row as selected, and `false` reports a selectable row that is not selected (give every row of a single-selection menu a value, as UIKit does). `GlassMenu` and `GlassPullDownButton` forward it to the rows they rebuild. Defaults to `null`, which keeps the previous semantics. The existing `isSelected` stays the visual pill state and is still not announced.
+
 # 1.16.1
 
 ## Features

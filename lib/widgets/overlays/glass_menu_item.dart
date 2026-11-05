@@ -20,6 +20,7 @@ class GlassMenuItem extends StatefulWidget {
     this.subtitle,
     this.isPressed,
     this.isSelected = false,
+    this.semanticsSelected,
     this.enabled = true,
     this.titleStyle,
     this.subtitleStyle,
@@ -60,7 +61,26 @@ class GlassMenuItem extends StatefulWidget {
   final bool? isPressed;
 
   /// Whether the item is currently selected (e.g. by a sliding pill).
+  ///
+  /// This is the visual highlight only: inside a [GlassMenu] it follows the
+  /// hovered or glided-over row. It is not reported to assistive
+  /// technologies; use [semanticsSelected] to mark the menu's current choice.
   final bool isSelected;
+
+  /// Whether this row is the menu's current choice, for assistive
+  /// technologies only.
+  ///
+  /// Use it when a menu works as a picker or sort menu and marks the current
+  /// value visually (for example with a checkmark in [trailing]):
+  ///
+  /// - `true` reports the row as selected (VoiceOver reads "selected").
+  /// - `false` reports a selectable row that is not selected. Give every row
+  ///   of a single-selection menu a value, as UIKit does for a
+  ///   `.singleSelection` `UIMenu`.
+  /// - `null` (the default) reports no selected state, as before.
+  ///
+  /// It does not change how the row is drawn.
+  final bool? semanticsSelected;
 
   /// Whether the item should handle its own interactions.
   final bool enabled;
@@ -403,6 +423,10 @@ class _GlassMenuItemState extends State<GlassMenuItem>
       // The title label replaces the row's own text, so carry the subtitle
       // as the value: announced after the title, on the same node.
       semanticValue: widget.subtitle,
+      // Only the semantic choice is reported. The visual [isSelected] follows
+      // the glide pill, and announcing it would mark whichever row is hovered.
+      tracksSelection: widget.semanticsSelected != null,
+      isSelected: widget.semanticsSelected ?? false,
       isFocusedNotifier: isFocused,
       isHoveredNotifier: isHovered,
       onKeyboardActivate: _handleKeyboardActivate,
