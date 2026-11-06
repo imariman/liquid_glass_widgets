@@ -45,6 +45,7 @@
     - Hero interactive controls (`GlassSwitch`, `GlassSlider`, `GlassSegmentedControl`) now default to `GlassQuality.premium`, and `GlassEffect` lazy-mounts `LiquidGlass.withOwnLayer` only while `interactionIntensity > 0.001` (during active press or drag) so resting switches and sliders in scrollable lists mount zero shader layers at rest.
     - Added `hasExplicitQuality` to `InheritedLiquidGlass` so an ambient `AdaptiveLiquidGlassLayer` without an explicit `quality:` (such as `GlassPage`) does not override widget-class `GlassQuality.premium` defaults inside `GlassScaffold.body`.
   - **Example showcase app (`example/`):** Added a live `iOS 27` / `iOS 26` style switcher to the Explore, Widgets, Demos, and Examples tabs (bidirectional with Apple Mail's style toggle) and updated catalog pages, cards, and Apple app demos (`Mail`, `Messages`, `Music`, `News`, `Podcasts`, `Lock Screen`) to inherit the active `GlassTheme` preset.
+- **`GlassMenuItem.semanticsChecked`** (`bool?`, default `null`): reports a picker row as a checked or unchecked radio button in place of the button role, for assistive technologies only. VoiceOver on macOS reads no selected state, but it reads a radio's checked state (`AXValue` 1 or 0), so the current choice is announced there. `GlassFocusRegion` gains the matching `checked`, and `GlassMenu` and `GlassPullDownButton` carry the field through when they rebuild their items. iOS reads a checked node as a switch, so set it where the platform reads it as a radio; `null` keeps the button.
 
 ## Bug Fixes
 
