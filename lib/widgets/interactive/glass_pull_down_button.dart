@@ -181,6 +181,7 @@ class GlassPullDownButton extends StatelessWidget {
             isPressed: item.isPressed,
             isSelected: item.isSelected,
             semanticsSelected: item.semanticsSelected,
+            semanticsChecked: item.semanticsChecked,
             titleStyle: item.titleStyle,
             subtitleStyle: item.subtitleStyle,
             iconColor: item.iconColor,

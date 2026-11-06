@@ -274,8 +274,8 @@ void main() {
   });
 
   testWidgets(
-      'GlassPullDownButton preserves semanticsSelected when onSelected is set',
-      (tester) async {
+      'GlassPullDownButton preserves semanticsSelected and semanticsChecked '
+      'when onSelected is set', (tester) async {
     await tester.pumpWidget(
       CupertinoApp(
         home: CupertinoPageScaffold(
@@ -289,11 +289,13 @@ void main() {
                     title: 'Name',
                     onTap: _noop,
                     semanticsSelected: true,
+                    semanticsChecked: true,
                   ),
                   GlassMenuItem(
                     title: 'Date',
                     onTap: _noop,
                     semanticsSelected: false,
+                    semanticsChecked: false,
                   ),
                   GlassMenuItem(title: 'Size', onTap: _noop),
                 ],
@@ -308,6 +310,7 @@ void main() {
     final menu = tester.widget<GlassMenu>(find.byType(GlassMenu));
     final items = menu.items.cast<GlassMenuItem>();
     expect(items.map((item) => item.semanticsSelected), [true, false, null]);
+    expect(items.map((item) => item.semanticsChecked), [true, false, null]);
   });
 
   testWidgets('GlassPullDownButton long menu stops at screen edge and scrolls',

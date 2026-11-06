@@ -1,3 +1,5 @@
+import 'dart:ui' show CheckedState, Tristate;
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show SemanticsAction, SemanticsNode;
@@ -1669,6 +1671,83 @@ void main() {
 
     expect(tapped, hasLength(1));
     expect(controller.isOpen, isFalse);
+  });
+
+  group('GlassMenuItem.semanticsChecked', () {
+    Future<void> openPicker(WidgetTester tester) async {
+      final controller = GlassMenuController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Positioned(
+                  left: 40,
+                  top: 80,
+                  child: GlassMenu(
+                    controller: controller,
+                    menuAlignment: GlassMenuAlignment.topLeft,
+                    trigger: const SizedBox(width: 8, height: 8),
+                    items: [
+                      GlassMenuItem(
+                        title: 'Alpha',
+                        onTap: () {},
+                        semanticsChecked: false,
+                      ),
+                      GlassMenuItem(
+                        title: 'Beta',
+                        onTap: () {},
+                        semanticsChecked: true,
+                        semanticsSelected: true,
+                      ),
+                      GlassMenuItem(title: 'Gamma', onTap: () {}),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      controller.open();
+      await tester.pumpAndSettle();
+    }
+
+    SemanticsNode row(WidgetTester tester, String title) =>
+        tester.getSemantics(find.bySemanticsLabel(title).first);
+
+    testWidgets('a checked row is a checked radio button, not a button',
+        (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      final beta = row(tester, 'Beta').getSemanticsData().flagsCollection;
+      expect(beta.isButton, isFalse);
+      expect(beta.isInMutuallyExclusiveGroup, isTrue);
+      expect(beta.isChecked, CheckedState.isTrue);
+      expect(beta.isSelected, Tristate.isTrue);
+      expect(
+        row(tester, 'Beta').getSemanticsData().hasAction(SemanticsAction.tap),
+        isTrue,
+      );
+
+      final alpha = row(tester, 'Alpha').getSemanticsData().flagsCollection;
+      expect(alpha.isButton, isFalse);
+      expect(alpha.isInMutuallyExclusiveGroup, isTrue);
+      expect(alpha.isChecked, CheckedState.isFalse);
+      semantics.dispose();
+    });
+
+    testWidgets('null (the default) keeps the button', (tester) async {
+      final semantics = tester.ensureSemantics();
+      await openPicker(tester);
+
+      final gamma = row(tester, 'Gamma').getSemanticsData().flagsCollection;
+      expect(gamma.isButton, isTrue);
+      expect(gamma.isInMutuallyExclusiveGroup, isFalse);
+      expect(gamma.isChecked, CheckedState.none);
+      semantics.dispose();
+    });
   });
 
   group('GlassMenuItem.semanticsSelected', () {

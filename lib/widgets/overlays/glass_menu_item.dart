@@ -31,6 +31,7 @@ class GlassMenuItem extends StatefulWidget {
     this.closeDelay,
     this.submenu,
     this.semanticLabel,
+    this.semanticsChecked,
   });
 
   /// The primary text of the item.
@@ -80,6 +81,20 @@ class GlassMenuItem extends StatefulWidget {
   /// of a single-selection menu a value); `null` (the default) reports no
   /// selected state, as before.
   final bool? semanticsSelected;
+
+  /// Whether this row is the menu's checked choice, reported as a radio
+  /// button that is checked or not, in place of the button role; for
+  /// assistive technologies only.
+  ///
+  /// macOS reports no selected state (the bridge never answers
+  /// `isAccessibilitySelected`), so [semanticsSelected] does not reach
+  /// VoiceOver there; a radio's checked state does, as `AXValue` 1 or 0.
+  /// iOS reads a checked node as a switch, so set this where the platform
+  /// reads it as a radio. `null` (the default) keeps the button.
+  ///
+  /// A radio's value is its checked state, so the [subtitle] is not
+  /// announced as the value; put it in [semanticLabel] if it matters.
+  final bool? semanticsChecked;
 
   /// Whether the item should handle its own interactions.
   final bool enabled;
@@ -418,6 +433,7 @@ class _GlassMenuItemState extends State<GlassMenuItem>
     return GlassFocusRegion(
       enabled: widget.enabled,
       isButton: true,
+      checked: widget.semanticsChecked,
       semanticLabel: widget.semanticLabel ?? widget.title,
       // The title label replaces the row's own text, so carry the subtitle
       // as the value: announced after the title, on the same node.
