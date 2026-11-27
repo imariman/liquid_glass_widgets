@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import '../../theme/glass_theme.dart';
 import '../effects/progressive_blur.dart';
 import '../interactive/liquid_glass_scope.dart';
+import 'glass_accessibility_scope.dart';
 
 /// Edge effect style matching iOS 26's `.scrollEdgeEffectStyle`.
 ///
@@ -44,6 +45,28 @@ enum GlassScrollEdgeStyle {
   /// transition zone with a steep opacity curve, ideal for dense settings
   /// lists, tabular data, and utility screens.
   hard,
+}
+
+/// When [GlassScrollEdgeEffect] shows its fades.
+enum GlassScrollEdgeVisibility {
+  /// The fades always show. The default.
+  always,
+
+  /// Each fade shows only while content is scrolled past its edge, as UIKit's
+  /// scroll edge effect (iOS 26 and later) does: the top fade while content
+  /// is scrolled under the top edge, the bottom fade while more content lies
+  /// below the bottom edge. A fade at rest at its edge is hidden, and it
+  /// fades in over the first [GlassScrollEdgeEffect.appearanceExtent] of
+  /// scrolling, following the scroll position rather than a timer, as
+  /// `GlassAppBar`'s scroll-under surface does.
+  ///
+  /// The effect follows the vertical scroll views that
+  /// [GlassScrollEdgeEffect.notificationPredicate] accepts, both inside its
+  /// child and, through the nearest [ScrollNotificationObserver] (a
+  /// `Scaffold` provides one), elsewhere on the page. The latter lets the
+  /// effect sit outside the scroll view, such as below a Material `AppBar`
+  /// over the top of a `Scaffold`'s body.
+  whenScrolledUnder,
 }
 
 /// A widget that fades or blurs scroll content at the top and/or bottom edges.
@@ -123,6 +146,10 @@ class GlassScrollEdgeEffect extends StatefulWidget {
     this.style = GlassScrollEdgeStyle.soft,
     this.maxSigma = 18.0,
     this.fadeColor,
+    this.visibility = GlassScrollEdgeVisibility.always,
+    this.appearanceExtent = 10.0,
+    this.notificationPredicate = defaultScrollNotificationPredicate,
+    this.opaqueUnderReduceTransparency = false,
   });
 
   /// The scrollable content to apply edge fading to.
@@ -179,6 +206,33 @@ class GlassScrollEdgeEffect extends StatefulWidget {
   /// outside [GlassPage].
   final Color? fadeColor;
 
+  /// When the fades show: [GlassScrollEdgeVisibility.always] (the default),
+  /// or only while content is scrolled past their edge
+  /// ([GlassScrollEdgeVisibility.whenScrolledUnder]).
+  final GlassScrollEdgeVisibility visibility;
+
+  /// With [GlassScrollEdgeVisibility.whenScrolledUnder], how far content
+  /// scrolls past an edge, in logical pixels, before that edge's fade is at
+  /// full strength. Defaults to 10.0, as `GlassAppBar.surfaceAppearanceExtent`.
+  /// Zero or less shows the fade fully as soon as content passes the edge.
+  final double appearanceExtent;
+
+  /// Which scroll notifications [GlassScrollEdgeVisibility.whenScrolledUnder]
+  /// follows. Defaults to [defaultScrollNotificationPredicate]: the nearest
+  /// scroll view (depth 0), as `AppBar` and `GlassAppBar` follow.
+  final ScrollNotificationPredicate notificationPredicate;
+
+  /// Whether, under Reduce Transparency
+  /// ([GlassAccessibilityData.reduceTransparency]), each fade turns into a
+  /// solid band of [fadeColor] (or the Cupertino scaffold background) over
+  /// its whole zone, as a UIKit bar's background turns opaque, instead of
+  /// letting content show through. With [absorbPointer] the band takes the
+  /// touches on it, so nothing hidden under it can be tapped.
+  ///
+  /// Use it where a fade zone lies under a bar of its own height, such as
+  /// a tab bar's box. Defaults to `false`, which keeps the fade.
+  final bool opaqueUnderReduceTransparency;
+
   @override
   State<GlassScrollEdgeEffect> createState() => _GlassScrollEdgeEffectState();
 }
@@ -206,9 +260,49 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
   /// backdrop copy on Impeller instead of taking two separate full-screen reads.
   final BackdropKey _blurBackdropKey = BackdropKey();
 
+  /// How much of each fade shows, from 0 to 1, under
+  /// [GlassScrollEdgeVisibility.whenScrolledUnder].
+  final ValueNotifier<double> _topVisibility = ValueNotifier<double>(0.0);
+  final ValueNotifier<double> _bottomVisibility = ValueNotifier<double>(0.0);
+  ScrollNotificationObserverState? _scrollObserver;
+
+  bool get _followsScroll =>
+      widget.visibility == GlassScrollEdgeVisibility.whenScrolledUnder;
+
+  void _syncScrollObserver() {
+    final next =
+        _followsScroll ? ScrollNotificationObserver.maybeOf(context) : null;
+    if (next == _scrollObserver) return;
+    _scrollObserver?.removeListener(_handleScroll);
+    _scrollObserver = next;
+    _scrollObserver?.addListener(_handleScroll);
+  }
+
+  void _handleScroll(ScrollNotification notification) {
+    if (!_followsScroll || !widget.notificationPredicate(notification)) return;
+    if (notification is! ScrollUpdateNotification &&
+        notification is! ScrollMetricsNotification) {
+      return;
+    }
+    final metrics = notification.metrics;
+    if (metrics.axis != Axis.vertical) return;
+    final reversed = metrics.axisDirection == AxisDirection.up;
+    final double above = reversed ? metrics.extentAfter : metrics.extentBefore;
+    final double below = reversed ? metrics.extentBefore : metrics.extentAfter;
+    _topVisibility.value = _visibilityFor(above);
+    _bottomVisibility.value = _visibilityFor(below);
+  }
+
+  double _visibilityFor(double extentPastEdge) {
+    if (extentPastEdge <= 0.0) return 0.0;
+    if (widget.appearanceExtent <= 0.0) return 1.0;
+    return (extentPastEdge / widget.appearanceExtent).clamp(0.0, 1.0);
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncScrollObserver();
     _backgroundKey = LiquidGlassScope.of(context);
 
     // Track brightness via the package's single brightness authority so that
@@ -243,6 +337,7 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
   @override
   void didUpdateWidget(GlassScrollEdgeEffect oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.visibility != oldWidget.visibility) _syncScrollObserver();
     final bool wasActive = oldWidget.fadeTop || oldWidget.fadeBottom;
     final bool isActive = widget.fadeTop || widget.fadeBottom;
     final bool styleBecameRaster = widget.style != GlassScrollEdgeStyle.blur &&
@@ -354,6 +449,10 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
 
   @override
   void dispose() {
+    _scrollObserver?.removeListener(_handleScroll);
+    _scrollObserver = null;
+    _topVisibility.dispose();
+    _bottomVisibility.dispose();
     _captureGeneration++;
     _backgroundImage?.dispose();
     _backgroundImage = null;
@@ -371,8 +470,19 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
     // remounts [widget.child] or resets scroll/search state.
     return Stack(
       children: [
-        // 1. Scroll content — no compositing layer wrapping it.
-        widget.child,
+        // 1. Scroll content — no compositing layer wrapping it. The listener
+        // feeds [GlassScrollEdgeVisibility.whenScrolledUnder] from the scroll
+        // views inside the child; it is always mounted so changing
+        // [GlassScrollEdgeEffect.visibility] never remounts the child.
+        NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // An observer above hears it too, which is harmless: both set
+            // the same visibility.
+            _handleScroll(notification);
+            return false;
+          },
+          child: widget.child,
+        ),
 
         // 2. Top fade overlay.
         if (widget.fadeTop)
@@ -387,8 +497,10 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
         if (widget.fadeBottom)
           _buildOverlay(
             isTop: false,
-            height:
-                _effectiveHeight(widget.bottomFadeHeight, screenSize.height),
+            height: _effectiveHeight(
+              widget.bottomFadeHeight,
+              screenSize.height,
+            ),
             screenSize: screenSize,
             hasTexture: hasTexture,
           ),
@@ -402,6 +514,54 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
     required Size screenSize,
     required bool hasTexture,
   }) {
+    final Positioned fade = _buildFade(
+      isTop: isTop,
+      height: height,
+      screenSize: screenSize,
+      hasTexture: hasTexture,
+    );
+    if (!_followsScroll) return fade;
+    // Shown as far as content has scrolled past the edge; at zero nothing is
+    // mounted, so the zone neither paints nor absorbs touches.
+    return Positioned(
+      top: fade.top,
+      bottom: fade.bottom,
+      left: fade.left,
+      right: fade.right,
+      height: fade.height,
+      child: ValueListenableBuilder<double>(
+        valueListenable: isTop ? _topVisibility : _bottomVisibility,
+        builder: (context, visibility, child) {
+          if (visibility <= 0.0) return const SizedBox.shrink();
+          return Opacity(opacity: visibility, child: child);
+        },
+        child: fade.child,
+      ),
+    );
+  }
+
+  Positioned _buildFade({
+    required bool isTop,
+    required double height,
+    required Size screenSize,
+    required bool hasTexture,
+  }) {
+    // Reduce Transparency, when asked for: a solid band over the zone.
+    if (widget.opaqueUnderReduceTransparency &&
+        GlassAccessibilityData.of(context).reduceTransparency) {
+      return Positioned(
+        top: isTop ? 0 : null,
+        bottom: isTop ? null : 0,
+        left: 0,
+        right: 0,
+        height: height,
+        child: AbsorbPointer(
+          absorbing: widget.absorbPointer,
+          child: IgnorePointer(child: ColoredBox(color: _fadeColor)),
+        ),
+      );
+    }
+
     // Ignore the visual layer unless the opt-in absorber is enabled.
     if (widget.style == GlassScrollEdgeStyle.blur) {
       return Positioned(
@@ -474,8 +634,7 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       '_buildColorOverlay must not be called for GlassScrollEdgeStyle.blur. '
       'The blur branch in _buildOverlay should return early with ProgressiveBlur.',
     );
-    final color =
-        widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
+    final color = _fadeColor;
     final curve = _kFadeCurves[widget.style]!;
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -490,6 +649,9 @@ class _GlassScrollEdgeEffectState extends State<GlassScrollEdgeEffect> {
       ),
     );
   }
+
+  Color get _fadeColor =>
+      widget.fadeColor ?? CupertinoTheme.of(context).scaffoldBackgroundColor;
 
   double _effectiveHeight(double height, double boundsHeight) {
     // Hard style uses a tighter transition zone (half of soft) combined with

@@ -493,4 +493,128 @@ void main() {
       expect(updatedImage != initialImage, isTrue);
     });
   });
+
+  group('GlassScrollEdgeEffect visibility', () {
+    Finder fadeBox() => find.descendant(
+          of: find.byType(GlassScrollEdgeEffect),
+          matching: find.byWidgetPredicate((w) =>
+              w is DecoratedBox &&
+              w.decoration is BoxDecoration &&
+              (w.decoration as BoxDecoration).gradient != null),
+        );
+
+    testWidgets(
+        'whenScrolledUnder shows each fade only while content is past its '
+        'edge, from the child and through a ScrollNotificationObserver',
+        (tester) async {
+      final controller = ScrollController();
+      addTearDown(controller.dispose);
+      Widget list() => ListView.builder(
+            controller: controller,
+            itemCount: 40,
+            itemExtent: 50,
+            itemBuilder: (_, index) => Text('$index'),
+          );
+
+      // Wrapping the scroll view.
+      await tester.pumpWidget(
+        CupertinoApp(
+          home: GlassScrollEdgeEffect(
+            visibility: GlassScrollEdgeVisibility.whenScrolledUnder,
+            fadeBottom: false,
+            topFadeHeight: 40,
+            child: list(),
+          ),
+        ),
+      );
+      expect(fadeBox(), findsNothing);
+      controller.jumpTo(5);
+      await tester.pump();
+      expect(
+        tester
+            .widget<Opacity>(
+                find.ancestor(of: fadeBox(), matching: find.byType(Opacity)))
+            .opacity,
+        0.5,
+      );
+      controller.jumpTo(300);
+      await tester.pump();
+      expect(fadeBox(), findsOneWidget);
+      controller.jumpTo(0);
+      await tester.pump();
+      expect(fadeBox(), findsNothing);
+
+      // Beside the scroll view, under a Material app bar: the effect hears the
+      // Scaffold's ScrollNotificationObserver.
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(title: const Text('Title')),
+            body: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                list(),
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 20,
+                  child: GlassScrollEdgeEffect(
+                    visibility: GlassScrollEdgeVisibility.whenScrolledUnder,
+                    fadeBottom: false,
+                    topFadeHeight: 20,
+                    child: SizedBox.expand(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(fadeBox(), findsNothing);
+      controller.jumpTo(300);
+      await tester.pump();
+      expect(fadeBox(), findsOneWidget);
+    });
+
+    testWidgets(
+        'opaqueUnderReduceTransparency fills the zone with fadeColor, '
+        'absorbing touches with absorbPointer', (tester) async {
+      const color = Color(0xFF203040);
+      var taps = 0;
+      Widget app({required bool opaque}) => CupertinoApp(
+            home: GlassAccessibilityScope(
+              reduceTransparency: true,
+              child: GlassScrollEdgeEffect(
+                fadeTop: false,
+                bottomFadeHeight: 100,
+                fadeColor: color,
+                absorbPointer: true,
+                opaqueUnderReduceTransparency: opaque,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => taps++,
+                  child: const SizedBox.expand(),
+                ),
+              ),
+            ),
+          );
+
+      // Off (the default): the fade stays a gradient.
+      await tester.pumpWidget(app(opaque: false));
+      expect(fadeBox(), findsOneWidget);
+
+      await tester.pumpWidget(app(opaque: true));
+      expect(fadeBox(), findsNothing);
+      final band = find.descendant(
+        of: find.byType(GlassScrollEdgeEffect),
+        matching: find.byType(ColoredBox),
+      );
+      expect(tester.widget<ColoredBox>(band).color, color);
+      expect(tester.getRect(band).height, 100);
+      await tester.tapAt(tester.getRect(band).center);
+      expect(taps, 0);
+    });
+  });
 }

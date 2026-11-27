@@ -1,3 +1,10 @@
+# Unreleased
+
+## Features
+
+- **`GlassScrollEdgeEffect` that shows only while content is scrolled past its edge (`visibility`, `GlassScrollEdgeVisibility`, `appearanceExtent`, `notificationPredicate`):** `GlassScrollEdgeVisibility.whenScrolledUnder` hides each fade while the content rests at that edge and fades it in over the first `appearanceExtent` (10 pt, as `GlassAppBar.surfaceAppearanceExtent`) of scrolling past it, as UIKit's scroll edge effect does (iOS 26 and later). It follows the scroll views inside its child and, through the nearest `ScrollNotificationObserver` (such as a `Scaffold`'s), scroll views elsewhere on the page, so the effect can also sit beside the scroll view: for example below a Material `AppBar`, over the top of a `Scaffold`'s body. At rest nothing is mounted for a hidden fade, so it neither paints nor absorbs touches. The default, `GlassScrollEdgeVisibility.always`, keeps today's behaviour.
+- **`GlassScrollEdgeEffect.opaqueUnderReduceTransparency`:** Under Reduce Transparency (`GlassAccessibilityData.reduceTransparency`) each fade becomes a solid band of `fadeColor` over its zone, as a UIKit bar's background turns opaque, and with `absorbPointer` it takes the touches on it, so content hidden under it cannot be tapped. For fade zones that lie under a bar of their own height, such as a tab bar's box. Off by default.
+
 # 1.22.0
 
 ## Features
