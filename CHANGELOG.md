@@ -3,32 +3,20 @@
 ## Features
 
 - **`GlassListTile` checked radio semantics (`GlassListTile.semanticsChecked`):** Reports a tappable row as a checked or unchecked item of a mutually exclusive group, in place of the button role, without changing visuals, so a checkmark list tells VoiceOver on macOS which row is chosen (`AXRadioButton`, `AXValue` 1 or 0). macOS gives the button role precedence over radio button and reports no selected state, so a selected flag around the row did not reach VoiceOver there. On iOS and macOS the checked row is also reported as selected, as Flutter's radio buttons are. `null` (the default) keeps the button.
+
 ## Changes
 
 - **`GlassSwitch` has no English default name:** Without `semanticLabel` the switch no longer names itself "Switch". VoiceOver and TalkBack already announce it as a switch, so the fallback was read twice ("Switch, switch button") and never localized. A switch with no label of its own takes its name from what surrounds it: `MergeSemantics` around a `GlassListTile` (without `onTap`) with a trailing `GlassSwitch` reads as one switch named by the tile's title.
+- **`GlassSlider` has no English default name:** Without `label` the slider no longer names itself "Slider". It was English in every language, and VoiceOver and TalkBack already announce the role ("adjustable"). A slider with no label now reads like a `UISlider` or SwiftUI `Slider` without one: its value and its role. `label` is documented as the screen reader name it is.
 
 ## Bug Fixes
 
 - **`GlassSwitch` reads as a switch on macOS:** The switch's semantics node was also a button, and macOS gives `button` its role before the switch role and then reports no on/off state, so VoiceOver on the Mac read "button" whether the switch was on or off. It is now a switch only (`AXSwitch` with `AXValue` 1 or 0); iOS and Android read it as before.
-## Bug Fixes
-
 - **`GlassSwitch` 44 pt tap target:** The default 58 x 26 pt switch took touches, and reported a semantics node, only over its track, under the 44 x 44 pt minimum (`iOSTapTargetGuideline`) that VoiceOver, Voice Control, Switch Control and fingers rely on. Its touch area and semantics node now extend to at least 44 pt on each side, centred on the track, without changing its layout size, its look or its focus ring; a touch or drag that starts beside the track works as one on it does, and the corners beside the round track ends now take touches too. A switch of 44 pt or more keeps its own size as its target.
-## Bug Fixes
-
 - **`GlassDisclosureGroup` header text at large text sizes:** The default header cut its title and subtitle to one line each with an ellipsis, so at large accessibility text sizes they read "Advanced…" / "Rarely neede…". They now wrap, as a SwiftUI `DisclosureGroup` label and `GlassListTile` do. A `title` or `subtitle` `Text` with its own `maxLines` and `overflow` still applies them.
-## Bug Fixes
-
 - **`GlassDisclosureGroup` header on iOS VoiceOver and from the keyboard:** iOS VoiceOver reads no `expanded` flag, so the header read "button" whether the group was open or closed; on iOS it now carries the state as its value, in the app's language (`CupertinoLocalizations`, as `CupertinoExpansionTile` reads it: "Collapsed" / "Expanded"). macOS and Android keep reading the expanded flag. The default header is now a focusable control: Tab stops on it, it shows the pressed highlight while focused, and Space or Enter opens and closes the group (calling `onExpansionChanged`). The rows of a closed group, which stay built at zero height, no longer take keyboard focus, so Tab no longer stops on rows that cannot be seen and Space or Enter no longer activates them.
 - **`GlassSlider.semanticFormatterCallback`:** Formats the value a screen reader announces, and the values an increment or decrement reaches, as Material's `Slider.semanticFormatterCallback` does. The value was always a percentage of the range, so a 0.5x to 2x speed slider at 1x read "33%". `null` (the default) keeps the percentage.
-
-## Changes
-
-- **`GlassSlider` has no English default name:** Without `label` the slider no longer names itself "Slider". It was English in every language, and VoiceOver and TalkBack already announce the role ("adjustable"). A slider with no label now reads like a `UISlider` or SwiftUI `Slider` without one: its value and its role. `label` is documented as the screen reader name it is.
-## Bug Fixes
-
 - **`GlassSlider` change callbacks for screen-reader adjustments and the end of a drag:** A VoiceOver or TalkBack increment or decrement called `onChanged` only, so an app that saves the value in `onChangeEnd` lost every change made with a screen reader; it now reports `onChangeStart`, `onChanged` and `onChangeEnd`, as Flutter's `Slider` does. `onChangeEnd` at the end of a drag reported the value from the slider's last build, not the drag's last value, when the last move and the lift arrived with no frame in between; it now reports the last value `onChanged` reported.
-## Bug Fixes
-
 - **`GlassSlider` arrow keys:** A focused slider took keyboard focus but ignored the arrow keys, so it could not be moved from a hardware keyboard (a Mac, an iPad with a keyboard, Full Keyboard Access). Up and the trailing arrow (Right, or Left in a right-to-left layout) now increase it by one step, Down and the leading arrow decrease it, and each press reports `onChangeStart`, `onChanged` and `onChangeEnd`, as Flutter's `Slider` does. The step is the one a screen reader uses: one division, or a tenth of the range. Under `NavigationMode.directional` only Left and Right adjust it, and Up and Down still move focus.
 
 # 1.22.0
