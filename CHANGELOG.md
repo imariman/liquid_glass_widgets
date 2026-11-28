@@ -19,6 +19,11 @@
 ## Bug Fixes
 
 - **`GlassDisclosureGroup` header on iOS VoiceOver and from the keyboard:** iOS VoiceOver reads no `expanded` flag, so the header read "button" whether the group was open or closed; on iOS it now carries the state as its value, in the app's language (`CupertinoLocalizations`, as `CupertinoExpansionTile` reads it: "Collapsed" / "Expanded"). macOS and Android keep reading the expanded flag. The default header is now a focusable control: Tab stops on it, it shows the pressed highlight while focused, and Space or Enter opens and closes the group (calling `onExpansionChanged`). The rows of a closed group, which stay built at zero height, no longer take keyboard focus, so Tab no longer stops on rows that cannot be seen and Space or Enter no longer activates them.
+- **`GlassSlider.semanticFormatterCallback`:** Formats the value a screen reader announces, and the values an increment or decrement reaches, as Material's `Slider.semanticFormatterCallback` does. The value was always a percentage of the range, so a 0.5x to 2x speed slider at 1x read "33%". `null` (the default) keeps the percentage.
+
+## Changes
+
+- **`GlassSlider` has no English default name:** Without `label` the slider no longer names itself "Slider". It was English in every language, and VoiceOver and TalkBack already announce the role ("adjustable"). A slider with no label now reads like a `UISlider` or SwiftUI `Slider` without one: its value and its role. `label` is documented as the screen reader name it is.
 
 # 1.22.0
 
