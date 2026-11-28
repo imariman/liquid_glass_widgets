@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+
 import '../../src/renderer/liquid_glass_renderer.dart';
 
 import '../../constants/glass_defaults.dart';
@@ -309,11 +312,17 @@ class _GlassSwitchState extends State<GlassSwitch>
 
     // Unified tempo: Position jump and Liquid bloom now move together
     _positionController = AnimationController(
-        duration: const Duration(milliseconds: 380), vsync: this);
+      duration: const Duration(milliseconds: 380),
+      vsync: this,
+    );
     _thicknessController = AnimationController(
-        duration: const Duration(milliseconds: 380), vsync: this);
+      duration: const Duration(milliseconds: 380),
+      vsync: this,
+    );
     _overshootController = AnimationController(
-        duration: const Duration(milliseconds: 220), vsync: this);
+      duration: const Duration(milliseconds: 220),
+      vsync: this,
+    );
     _switchListenable = Listenable.merge([
       _positionController,
       _thicknessController,
@@ -324,13 +333,17 @@ class _GlassSwitchState extends State<GlassSwitch>
     // Synchronized to grow and settle as the toggle jumps
     _thicknessAnimation = TweenSequence<double>([
       TweenSequenceItem(
-        tween: Tween<double>(begin: 0.0, end: 1.0)
-            .chain(CurveTween(curve: Curves.easeInOutCubic)),
+        tween: Tween<double>(
+          begin: 0.0,
+          end: 1.0,
+        ).chain(CurveTween(curve: Curves.easeInOutCubic)),
         weight: 45, // Grow up as it gains speed
       ),
       TweenSequenceItem(
-        tween: Tween<double>(begin: 1.0, end: 0.0)
-            .chain(CurveTween(curve: Curves.easeInOutQuad)),
+        tween: Tween<double>(
+          begin: 1.0,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeInOutQuad)),
         weight: 55, // Settle down as it lands
       ),
     ]).animate(_thicknessController);
@@ -391,10 +404,7 @@ class _GlassSwitchState extends State<GlassSwitch>
       _justEndedDrag = false;
 
       // Animate position (even when disabled, matching UISwitch / CupertinoSwitch)
-      _animatePositionTo(
-        widget.value ? 1.0 : 0.0,
-        fromDrag: justEndedDrag,
-      );
+      _animatePositionTo(widget.value ? 1.0 : 0.0, fromDrag: justEndedDrag);
 
       // Trigger the liquid pulse bloom only when interactive
       _isPressed = false;
@@ -411,21 +421,25 @@ class _GlassSwitchState extends State<GlassSwitch>
           // User held the switch until full bloom before releasing: smoothly
           // deflate across the remaining horizontal travel.
           final int ms = (280 * posDist).round().clamp(140, 280);
-          unawaited(_thicknessController.animateTo(
-            1.0,
-            duration: Duration(milliseconds: ms),
-            curve: Curves.linear,
-          ));
+          unawaited(
+            _thicknessController.animateTo(
+              1.0,
+              duration: Duration(milliseconds: ms),
+              curve: Curves.linear,
+            ),
+          );
         } else {
           // Quick tap or programmatic toggle: advance linearly through the
           // TweenSequence so the pill reaches peak bloom mid-flight (~45% of
           // travel) and smoothly settles as it lands on the destination side.
           final int ms = (320 * posDist).round().clamp(180, 320);
-          unawaited(_thicknessController.animateTo(
-            1.0,
-            duration: Duration(milliseconds: ms),
-            curve: Curves.linear,
-          ));
+          unawaited(
+            _thicknessController.animateTo(
+              1.0,
+              duration: Duration(milliseconds: ms),
+              curve: Curves.linear,
+            ),
+          );
         }
       }
     } else if (!_isDragging) {
@@ -438,7 +452,8 @@ class _GlassSwitchState extends State<GlassSwitch>
           _thicknessController.value > 0.0 &&
           !_thicknessController.isAnimating) {
         unawaited(
-            _thicknessController.forward(from: _thicknessController.value));
+          _thicknessController.forward(from: _thicknessController.value),
+        );
       }
     }
   }
@@ -456,11 +471,13 @@ class _GlassSwitchState extends State<GlassSwitch>
     final durationMs = fromDrag
         ? (240 * distance).round().clamp(120, 240)
         : (300 * distance).round().clamp(180, 300);
-    unawaited(_positionController.animateTo(
-      target,
-      duration: Duration(milliseconds: durationMs),
-      curve: fromDrag ? Curves.easeOutCubic : Curves.ease,
-    ));
+    unawaited(
+      _positionController.animateTo(
+        target,
+        duration: Duration(milliseconds: durationMs),
+        curve: fromDrag ? Curves.easeOutCubic : Curves.ease,
+      ),
+    );
   }
 
   double get _currentOvershootPx {
@@ -576,11 +593,13 @@ class _GlassSwitchState extends State<GlassSwitch>
     }
     _dragAbandonedExternally = false;
     _justEndedDrag = false;
-    unawaited(_thicknessController.animateTo(
-      0.45,
-      duration: const Duration(milliseconds: 120),
-      curve: Curves.easeOut,
-    ));
+    unawaited(
+      _thicknessController.animateTo(
+        0.45,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+      ),
+    );
   }
 
   void _onDragDown(DragDownDetails details) {
@@ -636,10 +655,12 @@ class _GlassSwitchState extends State<GlassSwitch>
     if (_reduceMotion) {
       _thicknessController.value = 0.0;
     } else if ((_thicknessController.value - 0.45).abs() > 0.01) {
-      unawaited(_thicknessController.animateTo(
-        0.45,
-        duration: const Duration(milliseconds: 80),
-      ));
+      unawaited(
+        _thicknessController.animateTo(
+          0.45,
+          duration: const Duration(milliseconds: 80),
+        ),
+      );
     } else {
       _thicknessController.value = 0.45;
     }
@@ -783,9 +804,13 @@ class _GlassSwitchState extends State<GlassSwitch>
     final onOffLabelColors = MediaQuery.onOffSwitchLabelsOf(context)
         ? (
             CupertinoDynamicColor.resolve(
-                widget.onLabelColor ?? CupertinoColors.white, context),
+              widget.onLabelColor ?? CupertinoColors.white,
+              context,
+            ),
             CupertinoDynamicColor.resolve(
-                widget.offLabelColor ?? _kOffLabelColor, context),
+              widget.offLabelColor ?? _kOffLabelColor,
+              context,
+            ),
           )
         : null;
 
@@ -799,8 +824,11 @@ class _GlassSwitchState extends State<GlassSwitch>
           final position = _positionController.value;
           final thickness = _thicknessAnimation.value;
 
-          final blendedColor =
-              Color.lerp(inactiveTrackColor, activeTrackColor, position)!;
+          final blendedColor = Color.lerp(
+            inactiveTrackColor,
+            activeTrackColor,
+            position,
+          )!;
 
           final track = Container(
             width: trackWidth,
@@ -864,8 +892,15 @@ class _GlassSwitchState extends State<GlassSwitch>
             child: Transform.scale(
               scaleX: flexScaleX,
               scaleY: flexScaleY,
-              child: _buildThumb(thumbSize, thickness, vExpand, leadStretch,
-                  anchorOffset, effectiveQuality, isDark),
+              child: _buildThumb(
+                thumbSize,
+                thickness,
+                vExpand,
+                leadStretch,
+                anchorOffset,
+                effectiveQuality,
+                isDark,
+              ),
             ),
           );
 
@@ -900,87 +935,92 @@ class _GlassSwitchState extends State<GlassSwitch>
       ),
     );
 
-    return GlassFocusRegion(
-      enabled: isInteractive,
-      focusNode: widget.focusNode,
-      autofocus: widget.autofocus,
-      // No default name: VoiceOver and TalkBack already say "switch", and an
-      // English fallback is never localized.
-      semanticLabel: widget.semanticLabel,
-      // A switch, not a button: macOS gives `button` its role before the
-      // switch role and then reports no on/off state.
-      toggled: widget.value,
-      semanticOnTap: isInteractive ? _handleTap : null,
-      shape: const StadiumBorder(),
-      isFocusedNotifier: _isFocused,
-      isHoveredNotifier: _isHovered,
-      onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
-      // Use a responsive 3 px horizontal drag slop (instead of Flutter's
-      // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
-      // runway!) via RawGestureDetector so we don't subscribe to MediaQuery.of.
-      child: RawGestureDetector(
-        excludeFromSemantics: true,
-        gestures: isInteractive
-            ? <Type, GestureRecognizerFactory>{
-                TapGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-                  () => TapGestureRecognizer(debugOwner: this),
-                  (TapGestureRecognizer instance) {
+    // The track is smaller than the 44 x 44 pt minimum target: the touch
+    // area and the semantics node extend around it to that size, while the
+    // switch keeps the track's size in the layout.
+    return _SwitchTapTarget(
+      child: GlassFocusRegion(
+        enabled: isInteractive,
+        focusNode: widget.focusNode,
+        autofocus: widget.autofocus,
+        // No default name: VoiceOver and TalkBack already say "switch",
+        // and an English fallback is never localized.
+        semanticLabel: widget.semanticLabel,
+        // A switch, not a button: macOS gives `button` its role before
+        // the switch role and then reports no on/off state.
+        toggled: widget.value,
+        semanticOnTap: isInteractive ? _handleTap : null,
+        shape: const StadiumBorder(),
+        isFocusedNotifier: _isFocused,
+        isHoveredNotifier: _isHovered,
+        onKeyboardActivate: isInteractive ? _activateFromKeyboard : null,
+        // Use a responsive 3 px horizontal drag slop (instead of Flutter's
+        // default 18 px kTouchSlop, which is ~90% of the switch's 20 px
+        // runway!) via RawGestureDetector so we don't subscribe to MediaQuery.of.
+        child: RawGestureDetector(
+          excludeFromSemantics: true,
+          // The whole box, the corners beside the round track ends too.
+          behavior: isInteractive ? HitTestBehavior.opaque : null,
+          gestures: isInteractive
+              ? <Type, GestureRecognizerFactory>{
+                  TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                          TapGestureRecognizer>(
+                      () => TapGestureRecognizer(debugOwner: this), (
+                    TapGestureRecognizer instance,
+                  ) {
                     instance
-                      ..gestureSettings =
-                          const DeviceGestureSettings(touchSlop: 3.0)
+                      ..gestureSettings = const DeviceGestureSettings(
+                        touchSlop: 3.0,
+                      )
                       ..onTapDown = _onTapDown
                       ..onTapUp = _onTapUp
                       ..onTapCancel = _onTapCancel;
-                  },
-                ),
-                HorizontalDragGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<
-                        HorizontalDragGestureRecognizer>(
-                  () => HorizontalDragGestureRecognizer(debugOwner: this),
-                  (HorizontalDragGestureRecognizer instance) {
-                    instance
-                      ..gestureSettings =
-                          const DeviceGestureSettings(touchSlop: 3.0)
-                      ..onDown = _onDragDown
-                      ..onCancel = _onDragCancel
-                      ..onStart = _onDragStart
-                      ..onUpdate = _onDragUpdate
-                      ..onEnd = _onDragEnd;
-                  },
-                ),
-              }
-            : const <Type, GestureRecognizerFactory>{},
-        // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
-        // CupertinoSwitch so the opaque white thumb does not bleed the track
-        // color underneath it.
-        child: isInteractive
-            ? switchVisual
-            : Opacity(
-                opacity: _kDisabledSwitchOpacity,
-                child: switchVisual,
-              ),
+                  }),
+                  HorizontalDragGestureRecognizer:
+                      GestureRecognizerFactoryWithHandlers<
+                          HorizontalDragGestureRecognizer>(
+                    () => HorizontalDragGestureRecognizer(debugOwner: this),
+                    (HorizontalDragGestureRecognizer instance) {
+                      instance
+                        ..gestureSettings = const DeviceGestureSettings(
+                          touchSlop: 3.0,
+                        )
+                        ..onDown = _onDragDown
+                        ..onCancel = _onDragCancel
+                        ..onStart = _onDragStart
+                        ..onUpdate = _onDragUpdate
+                        ..onEnd = _onDragEnd;
+                    },
+                  ),
+                }
+              : const <Type, GestureRecognizerFactory>{},
+          // Group-layer 50% opacity when disabled matches UIKit's UISwitch and
+          // CupertinoSwitch so the opaque white thumb does not bleed the track
+          // color underneath it.
+          child: isInteractive
+              ? switchVisual
+              : Opacity(opacity: _kDisabledSwitchOpacity, child: switchVisual),
+        ),
       ),
     );
   }
 
   Widget _buildThumb(
-      double size,
-      double transition,
-      double vExpand,
-      double leadStretch,
-      double anchorOffset,
-      GlassQuality? effectiveQuality,
-      bool isDark) {
+    double size,
+    double transition,
+    double vExpand,
+    double leadStretch,
+    double anchorOffset,
+    GlassQuality? effectiveQuality,
+    bool isDark,
+  ) {
     final thumbWidth = size * _kNativeKnobAspect;
     final thumbHeight = size;
     final totalWidth = thumbWidth + leadStretch;
     final totalHeight = thumbHeight + vExpand * 2;
 
     // Restored perfect pill radius with exact stadium SDF.
-    final thumbShape = LiquidRoundedRectangle(
-      borderRadius: totalHeight / 2,
-    );
+    final thumbShape = LiquidRoundedRectangle(borderRadius: totalHeight / 2);
     // Standard path only — Premium values are unchanged.
     final isStdPath =
         (effectiveQuality ?? GlassQuality.standard) == GlassQuality.standard;
@@ -1102,12 +1142,11 @@ class _GlassSwitchState extends State<GlassSwitch>
               children: [
                 // Glass shell footprint
                 Positioned.fill(
-                    child: Container(color: const Color(0x00000000))),
+                  child: Container(color: const Color(0x00000000)),
+                ),
 
                 // Full-capsule morphing white fill (fades out as lens lifts)
-                Positioned.fill(
-                  child: materialContent,
-                ),
+                Positioned.fill(child: materialContent),
 
                 // Skip mounting Opacity + GlassGlow on iOS 27 where glow is
                 // fully transparent (avoids a saveLayer + 4 spring controllers).
@@ -1118,10 +1157,7 @@ class _GlassSwitchState extends State<GlassSwitch>
                       opacity: transition,
                       child: GlassGlow(
                         glowColor: const Color(0x3DFFFFFF),
-                        child: SizedBox(
-                          width: thumbWidth,
-                          height: thumbHeight,
-                        ),
+                        child: SizedBox(width: thumbWidth, height: thumbHeight),
                       ),
                     ),
                   ),
@@ -1152,6 +1188,63 @@ class _GlassSwitchState extends State<GlassSwitch>
 /// thumb leaves when on, an `O` on the side it leaves when off. Each fades
 /// with the thumb's position and while the thumb blooms under a press, like
 /// [CupertinoSwitch]'s.
+/// Extends the switch's touch area and semantics node to at least
+/// [kMinInteractiveDimensionCupertino] (44 pt) on each side, centred on the
+/// track, without changing its layout, like the extended touch area of a
+/// native control.
+///
+/// It owns the switch's single semantics node (merging the focus region's
+/// node into it), so the node spans the target, and it moves a touch that
+/// lands around the track onto the track, by a translation only, so a drag
+/// that starts there moves the thumb as one on the track does.
+class _SwitchTapTarget extends SingleChildRenderObjectWidget {
+  const _SwitchTapTarget({required super.child});
+
+  @override
+  RenderObject createRenderObject(BuildContext context) =>
+      _RenderSwitchTapTarget();
+}
+
+class _RenderSwitchTapTarget extends RenderProxyBox {
+  Rect get _target => Rect.fromCenter(
+        center: size.center(Offset.zero),
+        width: math.max(size.width, kMinInteractiveDimensionCupertino),
+        height: math.max(size.height, kMinInteractiveDimensionCupertino),
+      );
+
+  @override
+  Rect get semanticBounds => _target;
+
+  @override
+  void describeSemanticsConfiguration(SemanticsConfiguration config) {
+    super.describeSemanticsConfiguration(config);
+    config
+      ..isSemanticBoundary = true
+      ..isMergingSemanticsOfDescendants = true;
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {required Offset position}) {
+    if (super.hitTest(result, position: position)) return true;
+    final child = this.child;
+    if (child == null || !_target.contains(position)) return false;
+    // The nearest point on the track's centre line, inside its stadium.
+    final radius = size.height / 2;
+    final onTrack = Offset(
+      position.dx.clamp(radius, math.max(radius, size.width - radius)),
+      radius,
+    );
+    final hit = result.addWithPaintOffset(
+      offset: position - onTrack,
+      position: position,
+      hitTest: (result, transformed) =>
+          child.hitTest(result, position: transformed),
+    );
+    if (hit) result.add(BoxHitTestEntry(this, position));
+    return hit;
+  }
+}
+
 class _OnOffLabelsPainter extends CustomPainter {
   _OnOffLabelsPainter({
     required this.onColor,
