@@ -16,6 +16,9 @@
 ## Bug Fixes
 
 - **`GlassDisclosureGroup` header text at large text sizes:** The default header cut its title and subtitle to one line each with an ellipsis, so at large accessibility text sizes they read "Advanced…" / "Rarely neede…". They now wrap, as a SwiftUI `DisclosureGroup` label and `GlassListTile` do. A `title` or `subtitle` `Text` with its own `maxLines` and `overflow` still applies them.
+## Bug Fixes
+
+- **`GlassDisclosureGroup` header on iOS VoiceOver and from the keyboard:** iOS VoiceOver reads no `expanded` flag, so the header read "button" whether the group was open or closed; on iOS it now carries the state as its value, in the app's language (`CupertinoLocalizations`, as `CupertinoExpansionTile` reads it: "Collapsed" / "Expanded"). macOS and Android keep reading the expanded flag. The default header is now a focusable control: Tab stops on it, it shows the pressed highlight while focused, and Space or Enter opens and closes the group (calling `onExpansionChanged`). The rows of a closed group, which stay built at zero height, no longer take keyboard focus, so Tab no longer stops on rows that cannot be seen and Space or Enter no longer activates them.
 
 # 1.22.0
 
