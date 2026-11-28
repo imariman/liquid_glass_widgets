@@ -563,6 +563,11 @@ class _GlassSliderState extends State<GlassSlider>
           isHoveredNotifier: _isHovered,
           // Sliders are adjusted with arrow keys, Space/Enter don't activate them natively
           onKeyboardActivate: null,
+          // One step per arrow key, reported as one adjustment.
+          onKeyboardIncrease:
+              widget.onChanged != null ? () => _adjustTo(increasedValue) : null,
+          onKeyboardDecrease:
+              widget.onChanged != null ? () => _adjustTo(decreasedValue) : null,
           child: RepaintBoundary(
             child: RawGestureDetector(
               gestures: <Type, GestureRecognizerFactory>{
